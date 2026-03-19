@@ -10,7 +10,7 @@
       >
         <div class="mb-5 flex items-center justify-between">
           <h2 class="text-lg font-bold text-gray-800 dark:text-gray-200">
-            {{ $t("books.createNewBook") }}
+            {{ editBookId ? $t("books.editBook") : $t("books.createNewBook") }}
           </h2>
           <CloseButton @click="$emit('update:modelValue', false)" />
         </div>
@@ -35,7 +35,7 @@
             ></textarea>
           </div>
           <BaseButton :disabled="!form.name.trim()" @click="handleCreate">
-            {{ $t("books.createButton") }}
+            {{ editBookId ? $t("common.save") : $t("books.createButton") }}
           </BaseButton>
         </div>
       </div>
@@ -49,7 +49,10 @@ import { useTrackerStore } from "../../stores/tracker";
 import BaseButton from "../BaseButton.vue";
 import CloseButton from "../CloseButton.vue";
 
-const props = defineProps<{ modelValue: boolean }>();
+const props = defineProps<{ 
+  modelValue: boolean;
+  editBookId?: string;
+}>();
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
   created: [bookId: string];
@@ -63,7 +66,19 @@ const form = ref({ name: "", membersText: "" });
 watch(
   () => props.modelValue,
   (open) => {
-    if (open) form.value = { name: "", membersText: "" };
+    if (open) {
+      if (props.editBookId) {
+        const book = store.books.find(b => b.id === props.editBookId);
+        if (book) {
+          form.value = {
+            name: book.name,
+            membersText: book.members.map(m => m.name).join("\n")
+          };
+          return;
+        }
+      }
+      form.value = { name: "", membersText: "" };
+    }
   },
 );
 
@@ -73,13 +88,20 @@ const handleCreate = () => {
     .split("\n")
     .map((s) => s.trim())
     .filter(Boolean);
-  const book = store.createBook(
-    form.value.name.trim(),
-    memberNames.length > 0 ? memberNames : [store.userProfile.name || "我"],
-  );
-  if (!book) return; // createBook returns null if name is empty
-  emit("update:modelValue", false);
-  emit("created", book.id);
+
+  if (props.editBookId) {
+    const defaultMembers = memberNames.length > 0 ? memberNames : [store.userProfile.name || "我"];
+    store.updateBook(props.editBookId, form.value.name.trim(), defaultMembers);
+    emit("update:modelValue", false);
+  } else {
+    const book = store.createBook(
+      form.value.name.trim(),
+      memberNames.length > 0 ? memberNames : [store.userProfile.name || "我"],
+    );
+    if (!book) return; 
+    emit("update:modelValue", false);
+    emit("created", book.id);
+  }
 };
 </script>
 

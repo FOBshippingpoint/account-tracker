@@ -62,17 +62,26 @@
               >NT$</span
             >
             <input
-              v-model.number="form.amount"
-              type="number"
-              min="1"
+              v-model="form.amountStr"
+              type="text"
+              inputmode="none"
+              @focus="showKeyboard = true"
               required
               :placeholder="$t('common.amount')"
-              class="input-field pl-14 text-base font-semibold"
+              class="input-field pl-14 text-base font-semibold caret-violet-500 selection:bg-violet-100 dark:selection:bg-violet-900/40"
             />
           </div>
 
-          <!-- Category Grid -->
-          <div>
+          <CalculatorKeyboard 
+            v-if="showKeyboard"
+            v-model="form.amountStr"
+            @submit="showKeyboard = false"
+            class="mt-2"
+          />
+
+          <div v-show="!showKeyboard" class="space-y-5">
+            <!-- Category Grid -->
+            <div>
             <label class="label-text !text-xs">{{ $t("common.category") }}</label>
             <div class="grid grid-cols-4 gap-2">
               <button
@@ -167,13 +176,13 @@
               </button>
             </div>
             <p
-              v-if="form.splitAmongIds.length > 0 && form.amount"
+              v-if="form.splitAmongIds.length > 0 && isValidAmount"
               class="mt-2 text-right text-xs font-medium text-blue-600 dark:text-blue-400"
             >
               {{
                 $t("recordSheet.splitPerPerson", {
                   amount: Math.floor(
-                    Number(form.amount) / form.splitAmongIds.length,
+                    Number(form.amountStr) / form.splitAmongIds.length,
                   ).toLocaleString(),
                 })
               }}
@@ -193,12 +202,13 @@
           <BaseButton
             type="submit"
             :disabled="
-              form.type === 'expense' && form.splitAmongIds.length === 0
+              !isValidAmount || (form.type === 'expense' && form.splitAmongIds.length === 0)
             "
             class="mt-2 w-full"
           >
             {{ $t("common.save") }}
           </BaseButton>
+          </div>
         </form>
       </div>
     </div>
@@ -212,11 +222,13 @@ import type { Member } from "../../stores/tracker";
 import BaseButton from "../BaseButton.vue";
 import CloseButton from "../CloseButton.vue";
 import CategoryIcon from "../CategoryIcon.vue";
+import CalculatorKeyboard from "../CalculatorKeyboard.vue";
 
 const props = defineProps<{
   modelValue: boolean;
   bookName: string;
   members: Member[];
+  editRecordId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -228,7 +240,7 @@ const today = new Date().toISOString().split("T")[0];
 
 const defaultForm = () => ({
   type: "expense" as "expense" | "income",
-  amount: "" as number | "",
+  amountStr: "",
   category: "",
   paidById: props.members[0]?.id ?? "",
   splitAmongIds: props.members.map((m) => m.id),
@@ -237,6 +249,7 @@ const defaultForm = () => ({
 });
 
 const form = ref(defaultForm());
+const showKeyboard = ref(false);
 
 const expenseCats = computed(() =>
   store.allCategories.filter((c) => c.type === "expense"),
@@ -248,14 +261,52 @@ const activeCats = computed(() =>
   form.value.type === "expense" ? expenseCats.value : incomeCats.value,
 );
 
+const evaluateAmount = () => {
+  const str = form.value.amountStr.trim();
+  if (!str) return;
+  if (/^[\d+\-*/. ()]+$/.test(str)) {
+    try {
+      const result = new Function(`return ${str}`)();
+      if (!isNaN(result) && result > 0) {
+        form.value.amountStr = String(Math.floor(result));
+      }
+    } catch {
+      // ignore
+    }
+  }
+};
+
+const isValidAmount = computed(() => {
+  const v = Number(form.value.amountStr);
+  return !isNaN(v) && v > 0;
+});
+
 // Reset & sync category when type changes or sheet opens
 watch(
   () => props.modelValue,
   (open) => {
     if (open) {
+      if (props.editRecordId) {
+        const r = store.records.find(x => x.id === props.editRecordId);
+        if (r) {
+          form.value = {
+            type: r.type,
+            amountStr: String(r.amount),
+            category: r.category,
+            paidById: r.paidById,
+            splitAmongIds: [...r.splitAmongIds],
+            date: r.date,
+            note: r.note,
+          };
+          return;
+        }
+      }
       const reset = defaultForm();
       reset.category = expenseCats.value[0]?.name ?? "";
       form.value = reset;
+      showKeyboard.value = true;
+    } else {
+      showKeyboard.value = false;
     }
   },
 );
@@ -288,19 +339,27 @@ const toggleAll = () => {
 const close = () => emit("update:modelValue", false);
 
 const handleSubmit = () => {
-  if (!form.value.amount || Number(form.value.amount) <= 0) return;
+  evaluateAmount();
+  const amt = Number(form.value.amountStr);
+  if (!amt || isNaN(amt) || amt <= 0) return;
   const isExpense = form.value.type === "expense";
   if (isExpense && form.value.splitAmongIds.length === 0) return;
 
-  store.addRecord({
+  const data = {
     type: form.value.type,
-    amount: Number(form.value.amount),
+    amount: amt,
     category: form.value.category,
     date: form.value.date,
     note: form.value.note,
     paidById: isExpense ? form.value.paidById : "",
     splitAmongIds: isExpense ? form.value.splitAmongIds : [],
-  });
+  };
+
+  if (props.editRecordId) {
+    store.updateRecord(props.editRecordId, data);
+  } else {
+    store.addRecord(data);
+  }
   close();
 };
 </script>

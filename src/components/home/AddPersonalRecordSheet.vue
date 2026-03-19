@@ -45,16 +45,26 @@
           <div class="relative">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-gray-500">NT$</span>
             <input
-              v-model.number="form.amount"
-              type="number"
-              min="1"
+              v-model="form.amountStr"
+              type="text"
+              inputmode="none"
+              @focus="showKeyboard = true"
               :placeholder="$t('common.amount')"
-              class="input-field input-field-icon text-sm"
+              class="input-field input-field-icon text-sm caret-violet-500 selection:bg-violet-100 dark:selection:bg-violet-900/40"
             />
           </div>
 
-          <!-- Category Grid -->
-          <div>
+          <CalculatorKeyboard 
+            v-if="showKeyboard"
+            v-model="form.amountStr"
+            @submit="showKeyboard = false"
+            class="mt-2"
+          />
+
+          <!-- Rest of the form is hidden when keyboard is open to save space -->
+          <div v-show="!showKeyboard" class="space-y-4">
+            <!-- Category Grid -->
+            <div>
             <label class="label-text !text-xs">{{ $t("common.category") }}</label>
             <div class="grid grid-cols-4 gap-2">
               <button
@@ -94,7 +104,7 @@
             </button>
             <button
               @click="submit"
-              :disabled="!form.amount"
+              :disabled="!isValidAmount"
               class="flex-1 rounded-xl bg-violet-600 py-3 text-sm font-bold text-white transition-colors hover:bg-violet-700 disabled:bg-gray-300 disabled:dark:bg-gray-600"
             >
               {{ $t("common.save") }}
@@ -102,6 +112,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
   </Teleport>
 </template>
@@ -111,8 +122,12 @@ import { ref, computed, watch } from "vue";
 import { useTrackerStore } from "../../stores/tracker";
 import CloseButton from "../CloseButton.vue";
 import CategoryIcon from "../CategoryIcon.vue";
+import CalculatorKeyboard from "../CalculatorKeyboard.vue";
 
-const props = defineProps<{ modelValue: boolean }>();
+const props = defineProps<{ 
+  modelValue: boolean;
+  editRecordId?: string;
+}>();
 const emit = defineEmits<{
   (e: "update:modelValue", v: boolean): void;
 }>();
@@ -133,13 +148,35 @@ const activeCats = computed(() =>
 
 const defaultForm = () => ({
   type: "expense" as "expense" | "income",
-  amount: "" as number | "",
+  amountStr: "",
   category: expenseCats.value[0]?.name ?? "",
   date: today,
   note: "",
 });
 
 const form = ref(defaultForm());
+const showKeyboard = ref(false);
+
+const evaluateAmount = () => {
+  const str = form.value.amountStr.trim();
+  if (!str) return;
+  // Evaluate simple math expressions (allow digits, basic operators, parens)
+  if (/^[\d+\-*/. ()]+$/.test(str)) {
+    try {
+      const result = new Function(`return ${str}`)();
+      if (!isNaN(result) && result > 0) {
+        form.value.amountStr = String(Math.floor(result));
+      }
+    } catch {
+      // ignore
+    }
+  }
+};
+
+const isValidAmount = computed(() => {
+  const v = Number(form.value.amountStr);
+  return !isNaN(v) && v > 0;
+});
 
 watch(
   () => form.value.type,
@@ -151,23 +188,50 @@ watch(
   },
 );
 
-// Reset form when sheet closes
+// Reset form or populate from editRecordId when sheet opens
 watch(
   () => props.modelValue,
   (open) => {
-    if (!open) form.value = defaultForm();
+    if (open) {
+      if (props.editRecordId) {
+        const r = store.personalRecords.find(x => x.id === props.editRecordId);
+        if (r) {
+          form.value = {
+            type: r.type,
+            amountStr: String(r.amount),
+            category: r.category,
+            date: r.date,
+            note: r.note,
+          };
+          return;
+        }
+      }
+      form.value = defaultForm();
+      showKeyboard.value = true;
+    } else {
+      showKeyboard.value = false;
+    }
   },
 );
 
 const submit = () => {
-  if (!form.value.amount) return;
-  store.addPersonalRecord({
+  evaluateAmount();
+  const amt = Number(form.value.amountStr);
+  if (!amt || isNaN(amt) || amt <= 0) return;
+
+  const data = {
     type: form.value.type,
-    amount: Number(form.value.amount),
+    amount: amt,
     category: form.value.category,
     date: form.value.date,
     note: form.value.note,
-  });
+  };
+
+  if (props.editRecordId) {
+    store.updatePersonalRecord(props.editRecordId, data);
+  } else {
+    store.addPersonalRecord(data);
+  }
   emit("update:modelValue", false);
 };
 </script>

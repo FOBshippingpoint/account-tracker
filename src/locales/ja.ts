@@ -52,6 +52,7 @@ export default {
     membersPlaceholder: "例：\n太郎\n花子\n次郎",
     createBtn: "帳簿を作成",
     createNewBook: "新しい帳簿を作成",
+    editBook: "帳簿を編集",
     membersDetail: "メンバー名（1行に1人）",
     createButton: "帳簿を作成",
     deleteConfirm: "「{name}」を削除してもよろしいですか？この帳簿のすべての記録も削除されます。",

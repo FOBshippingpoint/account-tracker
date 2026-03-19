@@ -52,7 +52,8 @@
         <div
           v-for="record in store.personalRecords"
           :key="record.id"
-          class="record-card"
+          @click="openEditRecord(record.id)"
+          class="record-card cursor-pointer"
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -82,7 +83,7 @@
                 {{ record.type === "expense" ? "-" : "+" }}{{ record.amount.toLocaleString() }}
               </p>
               <button
-                @click="store.deletePersonalRecord(record.id)"
+                @click.stop="store.deletePersonalRecord(record.id)"
                 class="btn-delete shrink-0"
               >
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,10 +109,10 @@
     </div>
 
     <!-- Draggable FAB -->
-    <DraggableFab @click="showForm = true" />
+    <DraggableFab @click="openNewRecord" />
 
     <!-- Sheets (extracted components) -->
-    <AddPersonalRecordSheet v-model="showForm" />
+    <AddPersonalRecordSheet v-model="showForm" :editRecordId="editRecordId" />
     <ImportFromBookSheet v-model="showImportSheet" />
   </div>
 </template>
@@ -131,6 +132,17 @@ const store = useTrackerStore();
 const { locale, te, t } = useI18n();
 const showForm = ref(false);
 const showImportSheet = ref(false);
+const editRecordId = ref<string | undefined>(undefined);
+
+const openNewRecord = () => {
+  editRecordId.value = undefined;
+  showForm.value = true;
+};
+
+const openEditRecord = (id: string) => {
+  editRecordId.value = id;
+  showForm.value = true;
+};
 
 // Pre-built category lookup map to avoid repeated store.find() calls per render
 const categoryMap = computed(() =>

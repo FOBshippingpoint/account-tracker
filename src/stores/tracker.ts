@@ -292,6 +292,25 @@ export const useTrackerStore = defineStore("tracker", () => {
     save();
   };
 
+  const updateBook = (bookId: string, name: string, memberNames: string[]) => {
+    const book = books.value.find((b) => b.id === bookId);
+    if (!book || !name.trim()) return null;
+
+    const existingMembers = book.members;
+    const newMembers: Member[] = memberNames
+      .filter((n) => n.trim())
+      .map((n) => {
+        const trimmed = n.trim();
+        const existing = existingMembers.find((m) => m.name === trimmed);
+        return existing ? existing : { id: crypto.randomUUID(), name: trimmed };
+      });
+
+    book.name = name.trim();
+    book.members = newMembers;
+    save();
+    return book;
+  };
+
   const deleteBook = (bookId: string) => {
     books.value = books.value.filter((b) => b.id !== bookId);
     records.value = records.value.filter((r) => r.bookId !== bookId);
@@ -324,6 +343,14 @@ export const useTrackerStore = defineStore("tracker", () => {
       bookId: currentBookId.value,
     });
     save();
+  };
+
+  const updateRecord = (id: string, record: Partial<Omit<RecordItem, "id" | "bookId">>) => {
+    const idx = records.value.findIndex((r) => r.id === id);
+    if (idx !== -1) {
+      records.value[idx] = { ...records.value[idx], ...record };
+      save();
+    }
   };
 
   const deleteRecord = (id: string) => {
@@ -414,6 +441,14 @@ export const useTrackerStore = defineStore("tracker", () => {
     save();
   };
 
+  const updatePersonalRecord = (id: string, record: Partial<Omit<PersonalRecord, "id">>) => {
+    const idx = personalRecords.value.findIndex((r) => r.id === id);
+    if (idx !== -1) {
+      personalRecords.value[idx] = { ...personalRecords.value[idx], ...record };
+      save();
+    }
+  };
+
   const deletePersonalRecord = (id: string) => {
     personalRecords.value = personalRecords.value.filter((r) => r.id !== id);
     save();
@@ -470,9 +505,11 @@ export const useTrackerStore = defineStore("tracker", () => {
     currentBookRecords,
     createBook,
     selectBook,
+    updateBook,
     deleteBook,
     addMemberToBook,
     addRecord,
+    updateRecord,
     deleteRecord,
     totalExpense,
     totalIncome,
@@ -481,6 +518,7 @@ export const useTrackerStore = defineStore("tracker", () => {
     settlements,
     personalRecords,
     addPersonalRecord,
+    updatePersonalRecord,
     deletePersonalRecord,
     personalTotalExpense,
     personalTotalIncome,

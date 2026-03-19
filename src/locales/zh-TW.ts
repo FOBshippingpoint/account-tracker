@@ -52,6 +52,7 @@ export default {
     membersPlaceholder: "例如：\n小明\n小美\n阿哲",
     createBtn: "建立帳本",
     createNewBook: "建立新帳本",
+    editBook: "編輯帳本",
     membersDetail: "成員名稱 (每行一位)",
     createButton: "建立帳本",
     deleteConfirm: "確定要刪除帳本「{name}」嗎？此帳本下所有紀錄也會一起刪除。",

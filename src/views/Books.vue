@@ -51,7 +51,7 @@
         </div>
       </div>
 
-      <DraggableFab color="blue" @click="showCreateModal = true" />
+      <DraggableFab color="blue" @click="openNewBook" />
     </template>
 
     <!-- ========== BOOK DETAIL VIEW ========== -->
@@ -89,6 +89,14 @@
             >
               <CategoryIcon name="receipt_long" class="-mt-0.5 h-4 w-4" />
               <span>{{ $t("books.settle") }}</span>
+            </button>
+            <button
+              @click="openEditBook"
+              class="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-white/30"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
             </button>
             <button
               @click="confirmDeleteBook"
@@ -157,7 +165,8 @@
           <div
             v-for="record in store.currentBookRecords"
             :key="record.id"
-            class="record-card"
+            @click="openEditRecord(record.id)"
+            class="record-card cursor-pointer"
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -188,7 +197,7 @@
                   }}{{ record.amount.toLocaleString() }}
                 </p>
                 <button
-                  @click="store.deleteRecord(record.id)"
+                  @click.stop="store.deleteRecord(record.id)"
                   class="btn-delete ml-1 shrink-0"
                 >
                   <svg
@@ -223,12 +232,13 @@
         </div>
       </div>
 
-      <DraggableFab color="blue" @click="showAddRecordSheet = true" />
+      <DraggableFab color="blue" @click="openNewRecord" />
     </template>
 
     <!-- ===== Modals & Sheets ===== -->
     <CreateBookModal
       v-model="showCreateModal"
+      :editBookId="editBookId"
       @created="(id) => (selectedBookId = id)"
     />
     <BookAddRecordSheet
@@ -236,6 +246,7 @@
       v-model="showAddRecordSheet"
       :bookName="currentBook.name"
       :members="currentBook.members"
+      :editRecordId="editRecordId"
     />
     <BookSettlementSheet
       v-model="showSettlementSheet"
@@ -273,6 +284,8 @@ const selectedBookId = ref<string | null>(null);
 const showCreateModal = ref(false);
 const showAddRecordSheet = ref(false);
 const showSettlementSheet = ref(false);
+const editRecordId = ref<string | undefined>(undefined);
+const editBookId = ref<string | undefined>(undefined);
 
 const currentBook = computed(
   () => store.books.find((b) => b.id === selectedBookId.value) ?? null,
@@ -286,9 +299,29 @@ const openBook = (id: string) => {
   store.selectBook(id);
 };
 
+const openNewBook = () => {
+  editBookId.value = undefined;
+  showCreateModal.value = true;
+};
+
+const openEditBook = () => {
+  editBookId.value = selectedBookId.value ?? undefined;
+  showCreateModal.value = true;
+};
+
+const openNewRecord = () => {
+  editRecordId.value = undefined;
+  showAddRecordSheet.value = true;
+};
+
+const openEditRecord = (id: string) => {
+  editRecordId.value = id;
+  showAddRecordSheet.value = true;
+};
+
 const confirmDeleteBook = () => {
   if (!currentBook.value) return;
-  if (confirm(t("books.deleteConfirm", { name: currentBook.value.name }))) {
+  if (window.confirm(t("books.deleteConfirm", { name: currentBook.value.name }))) {
     store.deleteBook(currentBook.value.id);
     selectedBookId.value = null;
   }

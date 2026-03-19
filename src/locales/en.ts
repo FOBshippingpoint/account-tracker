@@ -52,6 +52,7 @@ export default {
     membersPlaceholder: "e.g.,\nAllen\nBob\nAlice",
     createBtn: "Create Book",
     createNewBook: "Create New Book",
+    editBook: "Edit Book",
     membersDetail: "Members (One per line)",
     createButton: "Create Book",
     deleteConfirm: "Are you sure you want to delete the book '{name}'? All records will be deleted.",
