@@ -150,10 +150,7 @@
     />
 
     <!-- Template Settings Modal -->
-    <TemplateSettingsModal
-      v-if="showTemplateSettings"
-      @close="showTemplateSettings = false"
-    />
+    <TemplateSettingsModal v-model="showTemplateSettings" />
 
     <!-- Language Selection Sheet -->
     <Teleport to="body">
