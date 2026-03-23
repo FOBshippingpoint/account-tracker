@@ -491,7 +491,10 @@ export const useTrackerStore = defineStore("tracker", () => {
     const alreadyImported = personalRecords.value.some(
       (r) => r.sourceBookId === currentBook.value!.id,
     );
-    if (alreadyImported) return;
+    if (alreadyImported) {
+      alert(`已經匯入過「${currentBook.value.name}」的紀錄了！如果想重新測試，請先在列表中刪除舊的紀錄喔。`);
+      return;
+    }
     const stat = memberStats.value.find((s) => s.member.id === memberId);
     if (!stat || stat.owed <= 0) return;
 
@@ -499,9 +502,9 @@ export const useTrackerStore = defineStore("tracker", () => {
     addPersonalRecord({
       type: "expense",
       amount: stat.owed,
-      category: "e8", // default "other" expense category id
+      category: currentBook.value.name, // Display the book name directly
       date: today,
-      note: `來自帳本「${currentBook.value.name}」的分攤花費`,
+      note: "", // Empty note as requested
       sourceBookId: currentBook.value.id,
     });
   };

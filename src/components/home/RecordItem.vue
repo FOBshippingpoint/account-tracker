@@ -79,7 +79,7 @@ const store = useTrackerStore();
 const { t, te } = useI18n();
 
 const getCategoryStyle = (categoryName: string) => {
-  const cat = store.allCategories.find(c => c.name === categoryName);
+  const cat = store.allCategories.find(c => c.name === categoryName || c.id === categoryName);
   const color = cat?.color ?? "gray";
   return {
     icon: cat?.icon ?? "more_horiz",
@@ -88,7 +88,7 @@ const getCategoryStyle = (categoryName: string) => {
 };
 
 const getLocalizedCategoryName = (categoryName: string) => {
-  const cat = store.allCategories.find(c => c.name === categoryName);
+  const cat = store.allCategories.find(c => c.name === categoryName || c.id === categoryName);
   if (cat && te(`categories.${cat.id}`)) return t(`categories.${cat.id}`);
   return categoryName;
 };
