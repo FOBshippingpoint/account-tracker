@@ -123,6 +123,7 @@ export default {
     typeIncome: "収入",
     fixedAmount: "金額：${amount}",
     variableAmount: "金額不定",
+    saveAsTemplate: "テンプレートとして保存",
   },
   setup: {
     title: "Account Tracker",

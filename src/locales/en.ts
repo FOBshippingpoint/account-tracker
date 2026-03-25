@@ -123,6 +123,7 @@ export default {
     typeIncome: "Income",
     fixedAmount: "Amount: ${amount}",
     variableAmount: "Variable amount",
+    saveAsTemplate: "Save as template",
   },
   setup: {
     title: "Welcome to Account Tracker",

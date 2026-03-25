@@ -27,6 +27,27 @@
           @submit.prevent="handleSubmit"
           class="custom-scrollbar flex-1 space-y-5 overflow-y-auto px-6 py-6"
         >
+          <!-- Templates Quick Select -->
+          <div v-if="!editRecordId && store.recordTemplates.length > 0" class="-mx-1 mb-2">
+            <div class="flex items-center gap-2 overflow-x-auto px-1 pb-1 no-scrollbar">
+              <button
+                v-for="tpl in store.recordTemplates"
+                :key="tpl.id"
+                @click="applyTemplate(tpl.id)"
+                type="button"
+                class="flex shrink-0 items-center gap-1.5 rounded-full border border-gray-100 bg-gray-50/50 px-3 py-1.5 text-xs font-bold text-gray-600 transition-all hover:bg-gray-100 active:scale-95 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                <div 
+                  class="flex h-5 w-5 items-center justify-center rounded-full"
+                  :class="[getTemplateColorClass(tpl.category)]"
+                >
+                  <CategoryIcon :name="getTemplateIcon(tpl.category)" style="transform: scale(0.6);" />
+                </div>
+                {{ tpl.name }}
+              </button>
+            </div>
+          </div>
+
           <!-- Type toggle -->
           <div class="type-toggle-track">
             <button
@@ -200,10 +221,21 @@
             </p>
           </div>
 
-
+          <!-- Save as Template -->
+          <div v-if="!editRecordId" class="flex items-center gap-2.5 px-2 py-1">
+            <input
+              id="saveAsTemplate"
+              v-model="shouldSaveAsTemplate"
+              type="checkbox"
+              class="h-4.5 w-4.5 rounded-lg border-2 border-gray-200 text-blue-600 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800"
+            />
+            <label for="saveAsTemplate" class="cursor-pointer text-xs font-bold text-gray-500 dark:text-gray-400">
+              {{ $t("templates.saveAsTemplate") }}
+            </label>
+          </div>
 
           <BaseButton
-            type="submit"
+          type="submit"
             :disabled="
               !isValidAmount || (form.type === 'expense' && form.splitAmongIds.length === 0)
             "
@@ -222,6 +254,7 @@
 import { ref, computed, watch } from "vue";
 import { useTrackerStore } from "../../stores/tracker";
 import type { Member } from "../../stores/tracker";
+import { colorMap } from "../../utils/category";
 import BaseButton from "../BaseButton.vue";
 import CloseButton from "../CloseButton.vue";
 import CategoryIcon from "../CategoryIcon.vue";
@@ -253,6 +286,7 @@ const defaultForm = () => ({
 
 const form = ref(defaultForm());
 const showKeyboard = ref(false);
+const shouldSaveAsTemplate = ref(false);
 
 const expenseCats = computed(() =>
   store.allCategories.filter((c) => c.type === "expense"),
@@ -284,11 +318,37 @@ const isValidAmount = computed(() => {
   return !isNaN(v) && v > 0;
 });
 
+const applyTemplate = (templateId: string) => {
+  const t = store.recordTemplates.find((x) => x.id === templateId);
+  if (!t) return;
+  
+  const catName = store.allCategories.find((c) => c.id === t.category)?.name ?? t.category;
+  form.value.type = t.type;
+  form.value.category = catName;
+  form.value.amountStr = t.amount !== null ? String(t.amount) : "";
+  form.value.note = t.note || "";
+  
+  if (t.amount === null) {
+    showKeyboard.value = true;
+  }
+};
+
+const getTemplateIcon = (categoryId: string) => {
+  return store.allCategories.find((c) => c.id === categoryId)?.icon ?? "more_horiz";
+};
+
+const getTemplateColorClass = (categoryId: string) => {
+  const color = store.allCategories.find((c) => c.id === categoryId)?.color ?? "gray";
+  const styles = colorMap[color] ?? colorMap.gray;
+  return `${styles.bg} ${styles.text}`;
+};
+
 // Reset & sync category when type changes or sheet opens
 watch(
   () => props.modelValue,
   (open) => {
     if (open) {
+      shouldSaveAsTemplate.value = false;
       if (props.editRecordId) {
         const r = store.records.find(x => x.id === props.editRecordId);
         if (r) {
@@ -362,6 +422,18 @@ const handleSubmit = () => {
     store.updateRecord(props.editRecordId, data);
   } else {
     store.addRecord(data);
+    
+    // Save as template if requested
+    if (shouldSaveAsTemplate.value) {
+      const catId = store.allCategories.find(c => c.name === form.value.category)?.id ?? form.value.category;
+      store.addTemplate({
+        name: form.value.note || form.value.category,
+        type: form.value.type,
+        category: catId,
+        amount: amt,
+        note: form.value.note,
+      });
+    }
   }
   close();
 };

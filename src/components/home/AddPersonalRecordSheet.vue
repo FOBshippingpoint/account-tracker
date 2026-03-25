@@ -11,12 +11,33 @@
       >
         <div class="mb-5 flex items-center justify-between">
           <h2 class="text-lg font-bold text-gray-800 dark:text-gray-200">
-            {{ $t("home.addRecord") }}
+            {{ editRecordId ? $t("addRecord.title") : $t("home.addRecord") }}
           </h2>
           <CloseButton @click="$emit('update:modelValue', false)" />
         </div>
 
         <div class="space-y-4">
+          <!-- Templates Quick Select -->
+          <div v-if="!editRecordId && store.recordTemplates.length > 0" class="-mx-1 mb-2">
+            <div class="flex items-center gap-2 overflow-x-auto px-1 pb-1 no-scrollbar">
+              <button
+                v-for="tpl in store.recordTemplates"
+                :key="tpl.id"
+                @click="applyTemplate(tpl.id)"
+                type="button"
+                class="flex shrink-0 items-center gap-1.5 rounded-full border border-gray-100 bg-gray-50/50 px-3 py-1.5 text-xs font-bold text-gray-600 transition-all hover:bg-gray-100 active:scale-95 dark:border-gray-700/50 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                <div 
+                  class="flex h-5 w-5 items-center justify-center rounded-full"
+                  :class="[getTemplateColorClass(tpl.category)]"
+                >
+                  <CategoryIcon :name="getTemplateIcon(tpl.category)" style="transform: scale(0.6);" />
+                </div>
+                {{ tpl.name }}
+              </button>
+            </div>
+          </div>
+
           <!-- Type Toggle -->
           <div class="type-toggle-track">
             <button
@@ -108,24 +129,37 @@
               </div>
             </div>
 
-          <div class="flex gap-3 pt-1">
-            <button
-              @click="$emit('update:modelValue', false)"
-              class="flex-1 rounded-xl bg-gray-100 py-3 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            >
-              {{ $t("common.cancel") }}
-            </button>
-            <button
-              @click="submit"
-              :disabled="!isValidAmount"
-              class="flex-1 rounded-xl bg-violet-600 py-3 text-sm font-bold text-white transition-colors hover:bg-violet-700 disabled:bg-gray-300 disabled:dark:bg-gray-600"
-            >
-              {{ $t("common.save") }}
-            </button>
+            <!-- Save as Template -->
+            <div v-if="!editRecordId" class="flex items-center gap-2.5 px-2 py-1">
+              <input
+                id="saveAsTemplate"
+                v-model="shouldSaveAsTemplate"
+                type="checkbox"
+                class="h-4.5 w-4.5 rounded-lg border-2 border-gray-200 text-violet-600 focus:ring-violet-500/20 dark:border-gray-700 dark:bg-gray-800"
+              />
+              <label for="saveAsTemplate" class="cursor-pointer text-xs font-bold text-gray-500 dark:text-gray-400">
+                {{ $t("templates.saveAsTemplate") }}
+              </label>
+            </div>
+
+            <div class="flex gap-3 pt-1">
+              <button
+                @click="$emit('update:modelValue', false)"
+                class="flex-1 rounded-xl bg-gray-100 py-3 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                {{ $t("common.cancel") }}
+              </button>
+              <button
+                @click="submit"
+                :disabled="!isValidAmount"
+                class="flex-1 rounded-xl bg-violet-600 py-3 text-sm font-bold text-white transition-colors hover:bg-violet-700 disabled:bg-gray-300 disabled:dark:bg-gray-600"
+              >
+                {{ $t("common.save") }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </div>
   </Teleport>
 </template>
@@ -133,6 +167,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useTrackerStore } from "../../stores/tracker";
+import { colorMap } from "../../utils/category";
 import CloseButton from "../CloseButton.vue";
 import CategoryIcon from "../CategoryIcon.vue";
 import CalculatorKeyboard from "../CalculatorKeyboard.vue";
@@ -170,6 +205,7 @@ const defaultForm = () => ({
 
 const form = ref(defaultForm());
 const showKeyboard = ref(false);
+const shouldSaveAsTemplate = ref(false);
 
 const evaluateAmount = () => {
   const str = form.value.amountStr.trim();
@@ -192,6 +228,31 @@ const isValidAmount = computed(() => {
   return !isNaN(v) && v > 0;
 });
 
+const applyTemplate = (templateId: string) => {
+  const t = store.recordTemplates.find((x) => x.id === templateId);
+  if (!t) return;
+  
+  const catName = store.allCategories.find((c) => c.id === t.category)?.name ?? t.category;
+  form.value.type = t.type;
+  form.value.category = catName;
+  form.value.amountStr = t.amount !== null ? String(t.amount) : "";
+  form.value.note = t.note || "";
+  
+  if (t.amount === null) {
+    showKeyboard.value = true;
+  }
+};
+
+const getTemplateIcon = (categoryId: string) => {
+  return store.allCategories.find((c) => c.id === categoryId)?.icon ?? "more_horiz";
+};
+
+const getTemplateColorClass = (categoryId: string) => {
+  const color = store.allCategories.find((c) => c.id === categoryId)?.color ?? "gray";
+  const styles = colorMap[color] ?? colorMap.gray;
+  return `${styles.bg} ${styles.text}`;
+};
+
 watch(
   () => form.value.type,
   (newType) => {
@@ -207,6 +268,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open) {
+      shouldSaveAsTemplate.value = false;
       if (props.editRecordId) {
         const r = store.personalRecords.find(x => x.id === props.editRecordId);
         if (r) {
@@ -222,20 +284,8 @@ watch(
       }
       
       if (props.initialTemplateId) {
-        const t = store.recordTemplates.find(x => x.id === props.initialTemplateId);
-        if (t) {
-          // Template stores category id, but records store category name. Resolve it:
-          const catName = store.allCategories.find(c => c.id === t.category)?.name ?? t.category;
-          form.value = {
-            type: t.type,
-            amountStr: t.amount !== null ? String(t.amount) : "",
-            category: catName,
-            date: today,
-            note: t.note,
-          };
-          showKeyboard.value = t.amount === null;
-          return;
-        }
+        applyTemplate(props.initialTemplateId);
+        return;
       }
 
       form.value = defaultForm();
@@ -263,6 +313,18 @@ const submit = () => {
     store.updatePersonalRecord(props.editRecordId, data);
   } else {
     store.addPersonalRecord(data);
+    
+    // Save as template if requested
+    if (shouldSaveAsTemplate.value) {
+      const catId = store.allCategories.find(c => c.name === form.value.category)?.id ?? form.value.category;
+      store.addTemplate({
+        name: form.value.note || form.value.category,
+        type: form.value.type,
+        category: catId,
+        amount: amt,
+        note: form.value.note,
+      });
+    }
   }
   emit("update:modelValue", false);
 };
