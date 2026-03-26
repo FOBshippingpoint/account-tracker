@@ -52,9 +52,12 @@ export interface RecordTemplate {
 // User & Settings
 export interface UserProfile {
   name: string;
+  avatar?: string;
+  email?: string;
   theme: "light" | "dark" | "system";
   animations: boolean;
   isLoggedIn: boolean;
+  authToken?: string;
 }
 
 export interface Category {
@@ -241,13 +244,16 @@ export const useTrackerStore = defineStore("tracker", () => {
 
   function loginAnonymous(name: string) {
     userProfile.value.isLoggedIn = false;
+    userProfile.value.authToken = undefined;
     updateUserProfile(name);
   }
 
-  function loginGoogle(name: string, email: string) {
-    userProfile.value.name = name.trim();
+  function loginGoogle(data: { name: string; email: string; avatar: string; token: string }) {
+    userProfile.value.name = data.name.trim();
+    userProfile.value.email = data.email;
+    userProfile.value.avatar = data.avatar;
+    userProfile.value.authToken = data.token;
     userProfile.value.isLoggedIn = true;
-    console.log("Logged in with email:", email); // Placeholder to avoid unused variable error
     save();
   }
 

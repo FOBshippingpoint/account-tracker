@@ -1,4 +1,3 @@
-```html
 <template>
   <div class="page-container">
     <!-- Header -->
@@ -7,9 +6,10 @@
     >
       <div class="flex items-center gap-4">
         <div
-          class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-3xl font-bold backdrop-blur-sm"
+          class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white/20 text-3xl font-bold backdrop-blur-sm"
         >
-          {{ store.userProfile.name.charAt(0) }}
+          <img v-if="store.userProfile.avatar" :src="store.userProfile.avatar" class="h-full w-full object-cover" alt="avatar" />
+          <span v-else>{{ store.userProfile.name.charAt(0) }}</span>
         </div>
         <div>
           <h1 class="text-2xl font-bold">{{ store.userProfile.name }}</h1>
@@ -155,19 +155,31 @@
           </template>
         </ProfileSettingItem>
 
-        <!-- Login Setting -->
+        <!-- Login / Logout Setting -->
         <ProfileSettingItem
+          v-if="!store.userProfile.isLoggedIn"
           :title="$t('profile.login')"
           iconName="login"
           colorClasses="bg-emerald-50 text-emerald-500 dark:bg-emerald-900/30"
-          @click="router.push('/login')"
+          @click="handleLogin"
         >
           <template #right>
-            <span 
-              class="text-xs font-black uppercase tracking-wider"
-              :class="store.userProfile.isLoggedIn ? 'text-emerald-500' : 'text-amber-500'"
-            >
-              {{ store.userProfile.isLoggedIn ? 'Connected' : 'Not Linked' }}
+            <span class="text-xs font-black uppercase tracking-wider text-amber-500">
+              Not Linked
+            </span>
+          </template>
+        </ProfileSettingItem>
+
+        <ProfileSettingItem
+          v-else
+          title="登出帳號"
+          iconName="logout"
+          colorClasses="bg-red-50 text-red-500 dark:bg-red-900/30"
+          @click="handleLogout"
+        >
+          <template #right>
+            <span class="text-xs font-black uppercase tracking-wider text-emerald-500">
+              Connected
             </span>
           </template>
         </ProfileSettingItem>
@@ -184,34 +196,29 @@
     <TemplateSettingsModal v-model="showTemplateSettings" />
 
     <!-- Language Selection Sheet -->
-    <Teleport to="body">
-      <div v-if="showLangSheet" class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" @click.self="showLangSheet = false">
-        <div class="animate-slide-up w-full max-w-md rounded-t-3xl bg-white p-6 pb-10 shadow-2xl transition-colors dark:bg-gray-900">
-          <div class="mb-5 flex items-center justify-between">
-            <h2 class="text-lg font-bold text-gray-800 dark:text-gray-200">{{ $t("profile.languageSet") }}</h2>
-            <CloseButton @click="showLangSheet = false" />
-          </div>
-          <div class="space-y-2">
-            <button
-              v-for="(name, code) in langNameMap"
-              :key="code"
-              @click="setLanguage(code)"
-              :class="[
-                'flex w-full items-center justify-between rounded-2xl p-4 font-bold transition-all',
-                $i18n.locale === code
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/80',
-              ]"
-            >
-              <span>{{ name }}</span>
-              <svg v-if="$i18n.locale === code" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
+    <BaseBottomSheet
+      v-model="showLangSheet"
+      :title="$t('profile.languageSet')"
+    >
+      <div class="space-y-2">
+        <button
+          v-for="(name, code) in langNameMap"
+          :key="code"
+          @click="setLanguage(code)"
+          :class="[
+            'flex w-full items-center justify-between rounded-2xl p-4 font-bold transition-all',
+            $i18n.locale === code
+              ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+              : 'bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/80',
+          ]"
+        >
+          <span>{{ name }}</span>
+          <svg v-if="$i18n.locale === code" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
       </div>
-    </Teleport>
+    </BaseBottomSheet>
   </div>
 </template>
 
@@ -223,8 +230,8 @@ import { useTrackerStore } from "../stores/tracker";
 import CategorySettingsModal from "../components/CategorySettingsModal.vue";
 import TemplateSettingsModal from "../components/TemplateSettingsModal.vue";
 import CategoryIcon from "../components/CategoryIcon.vue";
-import CloseButton from "../components/CloseButton.vue";
 import ProfileSettingItem from "../components/ProfileSettingItem.vue";
+import BaseBottomSheet from "../components/BaseBottomSheet.vue";
 
 const { locale } = useI18n();
 const router = useRouter();
@@ -254,10 +261,24 @@ const toggleTheme = () => {
   store.setTheme(isDark.value ? "light" : "dark");
 };
 
+const handleLogin = () => {
+  const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+  window.location.href = `${backendUrl}/auth/google/login`;
+};
+
+const handleLogout = () => {
+  if (confirm("確定要登出嗎？資料將保留在此裝置。")) {
+    store.userProfile.isLoggedIn = false;
+    store.userProfile.authToken = undefined;
+    store.userProfile.avatar = undefined;
+    store.userProfile.email = undefined;
+    // We keep the name so they stay "setup"
+  }
+};
+
 const setLanguage = (code: string | number | symbol) => {
   locale.value = code as string;
   localStorage.setItem("account-tracker-lang", code as string);
   showLangSheet.value = false;
 };
 </script>
-```

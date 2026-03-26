@@ -40,9 +40,6 @@
             />
           </svg>
           {{ $t("login.googleLogin") }}
-          <span class="absolute right-4 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700 dark:bg-amber-900/30 dark:text-amber-500">
-            Soon
-          </span>
         </button>
 
         <!-- Anonymous Option (Only if not set yet) -->
@@ -58,7 +55,7 @@
 
           <button
             @click="showAnonymousForm = true"
-            class="w-full rounded-2xl bg-gray-900 px-4 py-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-white"
+            class="w-full rounded-2xl bg-gray-900 px-4 py-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-gray-800 active:scale-[0.98] dark:bg-200 dark:text-gray-900 dark:hover:bg-white"
           >
             {{ $t("login.anonymousLogin") }}
           </button>
@@ -118,20 +115,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useTrackerStore } from '../stores/tracker';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import CategoryIcon from '../components/CategoryIcon.vue';
 
 const store = useTrackerStore();
 const router = useRouter();
+const route = useRoute();
 
 const showAnonymousForm = ref(false);
 const name = ref('');
 
 const handleGoogleLogin = () => {
-  // Placeholder for future implementation
-  alert('Google Login is coming soon!');
+  const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+  window.location.href = `${backendUrl}/auth/google/login`;
 };
 
 const handleStart = () => {
@@ -140,4 +138,19 @@ const handleStart = () => {
     router.push('/');
   }
 };
+
+onMounted(() => {
+  // Check if we have tokens in the URL (returned from Google callback)
+  const query = route.query;
+  if (query.token && query.name) {
+    store.loginGoogle({
+      token: query.token as string,
+      name: query.name as string,
+      email: query.email as string,
+      avatar: query.avatar as string,
+    });
+    // Clear URL parameters
+    router.replace('/');
+  }
+});
 </script>
