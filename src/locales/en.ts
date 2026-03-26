@@ -104,6 +104,7 @@ export default {
     categorySet: "Category Settings",
     templateSet: "Record Templates",
     languageSet: "Language",
+    animationSet: "Animations",
     login: "Login / Register",
   },
   login: {

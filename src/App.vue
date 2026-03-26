@@ -3,7 +3,7 @@
     class="relative mx-auto min-h-screen max-w-md overflow-hidden bg-gray-50 transition-colors duration-300 dark:bg-gray-900 sm:rounded-none md:rounded-3xl md:shadow-2xl"
   >
     <router-view v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
+      <transition :name="store.userProfile.animations ? 'fade' : ''" mode="out-in">
         <component :is="Component" />
       </transition>
     </router-view>

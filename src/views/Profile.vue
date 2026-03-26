@@ -85,6 +85,45 @@
           </button>
         </div>
 
+        <!-- Animation Setting -->
+        <div
+          class="flex items-center justify-between border-b border-gray-50 p-4 transition-colors dark:border-gray-700"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-500 dark:bg-cyan-900/30"
+            >
+              <CategoryIcon name="animation" class="h-5 w-5" />
+            </div>
+            <span class="font-bold text-gray-700 dark:text-gray-200">{{ $t("profile.animationSet") }}</span>
+          </div>
+
+          <button
+            type="button"
+            @click="toggleAnimations"
+            :class="[
+              store.userProfile.animations ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-gray-600',
+              'relative inline-flex h-8 w-[52px] shrink-0 cursor-pointer items-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none',
+            ]"
+          >
+            <span class="sr-only">Toggle animations</span>
+            <span
+              :class="[
+                store.userProfile.animations ? 'translate-x-[26px]' : 'translate-x-[2px]',
+                'pointer-events-none flex h-[24px] w-[24px] transform items-center justify-center rounded-full bg-white shadow-sm ring-0 transition duration-300 ease-in-out',
+              ]"
+            >
+              <CategoryIcon
+                :name="store.userProfile.animations ? 'motion_photos_on' : 'motion_photos_off'"
+                :class="[
+                  store.userProfile.animations ? 'text-indigo-500' : 'text-gray-400',
+                  'flex items-center justify-center text-[15px] leading-none',
+                ]"
+              />
+            </span>
+          </button>
+        </div>
+
         <!-- Category Setting -->
         <ProfileSettingItem
           :title="$t('profile.categorySet')"
@@ -198,6 +237,10 @@ const langNameMap = {
   "zh-TW": "繁體中文",
   en: "English",
   ja: "日本語",
+};
+
+const toggleAnimations = () => {
+  store.setAnimations(!store.userProfile.animations);
 };
 
 const isDark = computed(() => {

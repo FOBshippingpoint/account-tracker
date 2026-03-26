@@ -53,6 +53,7 @@ export interface RecordTemplate {
 export interface UserProfile {
   name: string;
   theme: "light" | "dark" | "system";
+  animations: boolean;
   isLoggedIn: boolean;
 }
 
@@ -207,9 +208,11 @@ export const useTrackerStore = defineStore("tracker", () => {
   );
 
   // Settings & Theme
-  const userProfile = ref<UserProfile>(
-    loadFromStorage("tracker_user_profile", { name: "", theme: "system", isLoggedIn: false }),
-  );
+  const userProfileDefaults: UserProfile = { name: "", theme: "system", animations: true, isLoggedIn: false };
+  const userProfile = ref<UserProfile>({
+    ...userProfileDefaults,
+    ...loadFromStorage("tracker_user_profile", userProfileDefaults),
+  });
   const customCategories = ref<Category[]>(
     loadFromStorage("tracker_custom_categories", []),
   );
@@ -250,6 +253,11 @@ export const useTrackerStore = defineStore("tracker", () => {
 
   function setTheme(theme: "light" | "dark" | "system") {
     userProfile.value.theme = theme;
+    save();
+  }
+
+  function setAnimations(enabled: boolean) {
+    userProfile.value.animations = enabled;
     save();
   }
 
@@ -548,6 +556,7 @@ export const useTrackerStore = defineStore("tracker", () => {
     loginAnonymous,
     loginGoogle,
     setTheme,
+    setAnimations,
     books,
     records,
     currentBookId,
