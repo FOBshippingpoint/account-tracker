@@ -72,9 +72,7 @@
             @click="showImportMenu = !showImportMenu; showFilterMenu = false"
             class="relative z-20 flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-violet-50 text-violet-600 shadow-sm transition-colors hover:bg-violet-100 active:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:hover:bg-violet-900/50"
           >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
+            <CategoryIcon name="system_update_alt" class="text-[22px]" />
           </button>
           
           <transition name="slide-up">

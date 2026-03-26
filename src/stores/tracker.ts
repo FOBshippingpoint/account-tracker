@@ -53,6 +53,7 @@ export interface RecordTemplate {
 export interface UserProfile {
   name: string;
   theme: "light" | "dark" | "system";
+  isLoggedIn: boolean;
 }
 
 export interface Category {
@@ -207,7 +208,7 @@ export const useTrackerStore = defineStore("tracker", () => {
 
   // Settings & Theme
   const userProfile = ref<UserProfile>(
-    loadFromStorage("tracker_user_profile", { name: "", theme: "system" }),
+    loadFromStorage("tracker_user_profile", { name: "", theme: "system", isLoggedIn: false }),
   );
   const customCategories = ref<Category[]>(
     loadFromStorage("tracker_custom_categories", []),
@@ -231,7 +232,19 @@ export const useTrackerStore = defineStore("tracker", () => {
   const isProfileSet = computed(() => userProfile.value.name.trim() !== "");
 
   function updateUserProfile(name: string) {
-    userProfile.value.name = name;
+    userProfile.value.name = name.trim();
+    save();
+  }
+
+  function loginAnonymous(name: string) {
+    userProfile.value.isLoggedIn = false;
+    updateUserProfile(name);
+  }
+
+  function loginGoogle(name: string, email: string) {
+    userProfile.value.name = name.trim();
+    userProfile.value.isLoggedIn = true;
+    console.log("Logged in with email:", email); // Placeholder to avoid unused variable error
     save();
   }
 
@@ -532,6 +545,8 @@ export const useTrackerStore = defineStore("tracker", () => {
     userProfile,
     isProfileSet,
     updateUserProfile,
+    loginAnonymous,
+    loginGoogle,
     setTheme,
     books,
     records,

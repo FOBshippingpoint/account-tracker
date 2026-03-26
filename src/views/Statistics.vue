@@ -66,154 +66,21 @@
           </div>
         </div>
 
-        <!-- ===== Trend Bar Chart ===== -->
-        <div v-if="dateFilter.mode !== 'date'" class="mb-6">
-          <h2 class="section-title mb-3">{{ trendTitle }}</h2>
+        <!-- Trend Bar Chart -->
+        <TrendChart
+          v-if="dateFilter.mode !== 'date'"
+          :title="trendTitle"
+          :data="trendData"
+          :maxVal="trendMaxVal"
+          :activeTab="categoryTab"
+        />
 
-          <div v-if="trendData.length === 0" class="empty-state py-8 text-sm">
-            <div class="mb-2 text-3xl">📈</div>
-            {{ $t("statistics.noData") }}
-          </div>
-
-          <!-- Vertical bar chart (single color based on toggle) -->
-          <div
-            v-else
-            class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-          >
-            <div class="relative flex">
-              <!-- Background Grid (Fixed behind the scrollable area) -->
-              <div class="pointer-events-none absolute inset-x-0 top-8 z-0 flex h-[160px] flex-col justify-between pl-12">
-                <!-- 4 horizontal lines to match the 4 Y-axis labels -->
-                <div class="w-full border-t border-gray-100 dark:border-gray-700"></div>
-                <div class="w-full border-t border-gray-100 dark:border-gray-700"></div>
-                <div class="w-full border-t border-gray-100 dark:border-gray-700"></div>
-                <div class="w-full border-t border-gray-100 dark:border-gray-700"></div>
-              </div>
-
-              <!-- Y-axis labels -->
-              <div class="relative z-10 w-12 shrink-0 pt-8">
-                <div class="relative h-[160px] w-full">
-                  <span class="absolute right-2 top-[0%] -translate-y-1/2 text-[10px] text-gray-500">{{ Math.round(trendMaxVal).toLocaleString() }}</span>
-                  <span class="absolute right-2 top-[33.33%] -translate-y-1/2 text-[10px] text-gray-500">{{ Math.round(trendMaxVal * 2 / 3).toLocaleString() }}</span>
-                  <span class="absolute right-2 top-[66.67%] -translate-y-1/2 text-[10px] text-gray-500">{{ Math.round(trendMaxVal / 3).toLocaleString() }}</span>
-                  <span class="absolute right-2 top-[100%] -translate-y-1/2 text-[10px] text-gray-500">0</span>
-                </div>
-              </div>
-
-              <!-- Scrollable Bars Area (pt-8 provides space for tooltip inside overflow) -->
-              <div class="relative z-10 flex-1 overflow-x-auto pb-4">
-                <div
-                  class="flex pt-8"
-                  :style="{ minWidth: trendData.length * 28 + 'px' }"
-                >
-                  <div
-                    v-for="item in trendData"
-                    :key="item.key"
-                    class="group relative flex flex-1 flex-col items-center border-l border-gray-50/50 dark:border-gray-700/30 first:border-none"
-                  >
-                    <!-- Bar area -->
-                    <div class="relative mx-auto w-full" style="height: 160px">
-                      <!-- Bar -->
-                      <div
-                        class="absolute bottom-0 left-1/2 w-[14px] -translate-x-1/2 rounded-t-md transition-all duration-500"
-                        :class="categoryTab === 'expense' ? 'bg-red-400' : 'bg-green-400'"
-                        :style="{ height: Math.max(item.percent * 1.6, item.value > 0 ? 2 : 0) + 'px' }"
-                      ></div>
-
-                      <!-- Tooltip on hover (top right of bar, no background) -->
-                      <div
-                        v-if="item.value > 0"
-                        class="pointer-events-none absolute z-10 whitespace-nowrap text-[10px] font-bold text-gray-600 opacity-0 transition-opacity group-hover:opacity-100 dark:text-gray-300"
-                        :style="{ 
-                          bottom: Math.max(item.percent * 1.6, 2) + 'px', 
-                          left: '50%', 
-                          marginLeft: '8px', 
-                          marginBottom: '2px' 
-                        }"
-                      >
-                        {{ item.value.toLocaleString() }}
-                      </div>
-                    </div>
-
-                    <!-- X-axis label -->
-                    <span class="mt-1 block text-center text-[10px] leading-tight text-gray-400">
-                      {{ item.shortLabel }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ===== Category Breakdown ===== -->
-        <div class="mb-6">
-          <h2 class="section-title mb-3">{{ $t("statistics.categoryBreakdown") }}</h2>
-
-          <!-- Category list or empty -->
-          <div v-if="categoryBreakdown.length === 0" class="empty-state py-8 text-sm">
-            <div class="mb-2 text-3xl">🔍</div>
-            {{ $t("statistics.noData") }}
-          </div>
-
-          <div v-else class="space-y-3">
-            <div
-              v-for="item in categoryBreakdown"
-              :key="item.categoryName"
-              class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-            >
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div
-                    :class="[
-                      'record-icon',
-                      item.style.bg,
-                      item.style.text,
-                    ]"
-                  >
-                    <CategoryIcon :name="item.style.icon" />
-                  </div>
-                  <div>
-                    <p class="text-sm font-bold text-gray-800 dark:text-gray-200">
-                      {{ item.localizedName }}
-                    </p>
-                    <p class="hint-text mt-0.5">
-                      {{ item.count }} {{ $t("statistics.records") }}
-                    </p>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <p
-                    :class="[
-                      'font-bold',
-                      categoryTab === 'expense' ? 'text-red-500' : 'text-green-500',
-                    ]"
-                  >
-                    {{ item.total.toLocaleString() }}
-                  </p>
-                  <p class="hint-text mt-0.5">{{ item.percentage }}%</p>
-                </div>
-              </div>
-
-              <!-- Progress bar -->
-              <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
-                <div
-                  class="h-full rounded-full transition-all duration-500"
-                  :class="categoryTab === 'expense' ? 'bg-red-400' : 'bg-green-400'"
-                  :style="{ width: item.percentage + '%' }"
-                ></div>
-              </div>
-            </div>
-
-            <!-- Total row -->
-            <div class="flex items-center justify-between rounded-2xl bg-gray-100 p-4 font-bold dark:bg-gray-800">
-              <span class="text-gray-600 dark:text-gray-300">{{ $t("statistics.total") }}</span>
-              <span :class="categoryTab === 'expense' ? 'text-red-500' : 'text-green-500'">
-                {{ categoryTotal.toLocaleString() }}
-              </span>
-            </div>
-          </div>
-        </div>
+        <!-- Category Breakdown -->
+        <CategoryBreakdown
+          :data="categoryBreakdown"
+          :total="categoryTotal"
+          :activeTab="categoryTab"
+        />
       </template>
     </div>
   </div>
@@ -226,7 +93,8 @@ import { useTrackerStore } from "../stores/tracker";
 import { colorMap } from "../utils/category";
 import SummaryBar from "../components/SummaryBar.vue";
 import DateFilterBar from "../components/DateFilterBar.vue";
-import CategoryIcon from "../components/CategoryIcon.vue";
+import TrendChart from "../components/statistics/TrendChart.vue";
+import CategoryBreakdown from "../components/statistics/CategoryBreakdown.vue";
 import type { DateFilter } from "../components/DateFilterBar.vue";
 
 const store = useTrackerStore();

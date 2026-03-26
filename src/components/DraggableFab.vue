@@ -57,16 +57,19 @@ defineProps({
 const colorClasses = {
   violet: {
     bg: "bg-violet-600 hover:bg-violet-700",
-    shadow: "rgba(139,92,246,0.5)",
+    shadow: "var(--color-fab-violet, rgba(139,92,246,0.5))",
   },
-  blue: { bg: "bg-blue-600 hover:bg-blue-700", shadow: "rgba(37,99,235,0.5)" },
+  blue: { 
+    bg: "bg-blue-600 hover:bg-blue-700", 
+    shadow: "var(--color-fab-blue, rgba(37,99,235,0.5))" 
+  },
   indigo: {
     bg: "bg-indigo-600 hover:bg-indigo-700",
-    shadow: "rgba(79,70,229,0.5)",
+    shadow: "var(--color-fab-indigo, rgba(79,70,229,0.5))",
   },
   emerald: {
     bg: "bg-emerald-600 hover:bg-emerald-700",
-    shadow: "rgba(5,150,105,0.5)",
+    shadow: "var(--color-fab-emerald, rgba(5,150,105,0.5))",
   },
 };
 

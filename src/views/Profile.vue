@@ -13,12 +13,36 @@
         </div>
         <div>
           <h1 class="text-2xl font-bold">{{ store.userProfile.name }}</h1>
-          <p class="text-indigo-200">{{ $t("profile.settingsTitle") }}</p>
+          <p class="text-indigo-200">
+            {{ store.userProfile.isLoggedIn ? 'Cloud Synced' : 'Local Only' }}
+          </p>
         </div>
       </div>
     </div>
 
     <div class="mt-6 space-y-4 px-4">
+      <!-- Sync Banner for Anonymous -->
+      <div
+        v-if="!store.userProfile.isLoggedIn"
+        @click="router.push('/login')"
+        class="flex cursor-pointer items-center justify-between rounded-2xl bg-amber-50 p-4 shadow-sm transition-all hover:bg-amber-100 active:scale-[0.98] dark:bg-amber-900/20 dark:hover:bg-amber-900/30"
+      >
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-500">
+            <CategoryIcon name="cloud_upload" class="h-6 w-6" />
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-amber-800 dark:text-amber-400">
+              {{ $t("login.linkAccountTitle") }}
+            </h3>
+            <p class="text-[10px] font-bold text-amber-600 dark:text-amber-600">
+              Data is currently stored only on this device
+            </p>
+          </div>
+        </div>
+        <CategoryIcon name="chevron_right" class="h-5 w-5 text-amber-400" />
+      </div>
+
       <div
         class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all dark:border-gray-800 dark:bg-gray-800"
       >
@@ -98,7 +122,16 @@
           iconName="login"
           colorClasses="bg-emerald-50 text-emerald-500 dark:bg-emerald-900/30"
           @click="router.push('/login')"
-        />
+        >
+          <template #right>
+            <span 
+              class="text-xs font-black uppercase tracking-wider"
+              :class="store.userProfile.isLoggedIn ? 'text-emerald-500' : 'text-amber-500'"
+            >
+              {{ store.userProfile.isLoggedIn ? 'Connected' : 'Not Linked' }}
+            </span>
+          </template>
+        </ProfileSettingItem>
       </div>
     </div>
 

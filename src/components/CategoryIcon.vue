@@ -1,7 +1,6 @@
 <template>
   <span
-    :class="['material-symbols-outlined block select-none', className]"
-    style="line-height: inherit; font-size: inherit"
+    :class="['material-symbols-outlined inline-flex items-center justify-center select-none leading-none', className]"
   >
     {{ name }}
   </span>
